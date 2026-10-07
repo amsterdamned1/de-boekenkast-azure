@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="nl" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>De Boekenkast - Ontdek je volgende favoriete verhaal</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Playfair Display for headings, Inter for body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        book: {
+                            navy: '#1A2A3A',     /* Diepblauw achtergrond/accents */
+                            paper: '#FBF9F5',    /* Warme papierkleur */
+                            warm: '#F3EDE2',     /* Licht accent tint */
+                            gold: '#C59B27',     /* Gouden accenten */
+                            goldhover: '#A37F1E',
+                            dark: '#2C221E',     /* Text donker */
+                            burgundy: '#6B2D39'  /* Warm rood accent */
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #FBF9F5;
+            color: #2C221E;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Custom Scrollbar for warm feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F3EDE2;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C59B27;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #A37F1E;
+        }
+
+        /* Subtle hero texture overlay */
+        .hero-pattern {
+            background-color: #1A2A3A;
+            background-image: radial-gradient(#C59B27 0.5px, transparent 0.5px), radial-gradient(#C59B27 0.5px, #1A2A3A 0.5px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            background-opacity: 0.05;
+        }
+
+        /* Book cover standard shadow and transition */
+        .book-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .book-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 24px -10px rgba(26, 42, 58, 0.25);
+        }
+
+        /* Notification Toast animation */
+        @keyframes slideIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-animate {
+            animation: slideIn 0.3s ease forwards;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative overflow-x-hidden">
+
+    <!-- Top Announcement Bar -->
+    <div class="bg-book-navy text-book-paper text-xs py-2 px-4 text-center tracking-wide font-medium flex justify-between items-center px-6 border-b border-book-gold/20">
+        <span class="hidden md:inline"><i class="fa-solid fa-truck-fast text-book-gold mr-2"></i>Gratis verzending vanaf €30,- in Nederland & België</span>
+        <span class="mx-auto md:mx-0"><i class="fa-solid fa-book-open text-book-gold mr-2"></i>Vóór 23:00 besteld, morgen in huis</span>
+        <span class="hidden lg:inline"><i class="fa-solid fa-heart text-book-gold mr-2"></i>Persoonlijk inpakservice mogelijk</span>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="sticky top-0 z-40 bg-book-paper/95 backdrop-blur-md border-b border-book-warm shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 rounded-lg bg-book-navy text-book-gold flex items-center justify-center text-xl shadow-md group-hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-book-bookmark"></i>
+                    </div>
+                    <div>
+                        <span class="font-serif text-2xl font-bold tracking-tight text-book-navy block leading-none">De Boekenkast</span>
+                        <span class="text-[10px] tracking-widest uppercase text-book-gold font-semibold">Online Boekwinkel</span>
+                    </div>
+                </a>
+
+                <!-- Desktop Search Bar -->
+                <div class="hidden md:flex flex-1 max-w-md mx-8 relative">
+                    <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Zoek op titel, auteur of genre..." 
+                        class="w-full pl-10 pr-4 py-2 rounded-full border border-book-warm bg-white focus:outline-none focus:ring-2 focus:ring-book-gold/50 focus:border-book-gold text-sm shadow-inner transition-all">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-gray-400 text-sm"></i>
+                    <button id="clearSearch" onclick="clearSearchInput()" class="hidden absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 text-sm">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Navigation Links & Cart -->
+                <div class="flex items-center space-x-6">
+                    <nav class="hidden lg:flex space-x-6 text-sm font-medium text-book-dark">
+                        <a href="#home" class="hover:text-book-gold transition-colors">Home</a>
+                        <a href="#collectie" class="hover:text-book-gold transition-colors">Collectie</a>
+                        <a href="#categorieen" class="hover:text-book-gold transition-colors">Categorieën</a>
+                        <a href="#over-ons" class="hover:text-book-gold transition-colors">Over Ons</a>
+                    </nav>
+
+                    <!-- Cart Icon Button -->
+                    <button onclick="toggleCart()" class="relative p-2.5 text-book-navy hover:text-book-gold transition-colors rounded-full hover:bg-book-warm focus:outline-none" aria-label="Winkelmandje">
+                        <i class="fa-solid fa-bag-shopping text-xl"></i>
+                        <span id="cartBadge" class="absolute -top-1 -right-1 bg-book-gold text-white text-[11px] font-bold rounded-full h-5 w-5 flex items-center justify-center border-2 border-book-paper scale-0 transition-transform">0</span>
+                    </button>
+
+                    <!-- Mobile Menu Toggle Button -->
+                    <button onclick="toggleMobileMenu()" class="lg:hidden p-2 text-book-navy hover:text-book-gold focus:outline-none">
+                        <i id="menuIcon" class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Search Bar (under logo on small screens) -->
+            <div class="pb-3 md:hidden">
+                <div class="relative w-full">
+                    <input type="text" id="searchInputMobile" oninput="handleMobileSearch()" placeholder="Zoek boeken of auteurs..." 
+                        class="w-full pl-10 pr-4 py-2 rounded-full border border-book-warm bg-white focus:outline-none focus:ring-2 focus:ring-book-gold/50 text-sm shadow-inner">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-gray-400 text-sm"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu Dropdown -->
+        <div id="mobileMenu" class="hidden lg:hidden bg-book-paper border-b border-book-warm px-4 pt-2 pb-4 space-y-3">
+            <a href="#home" onclick="toggleMobileMenu()" class="block py-2 text-book-dark hover:text-book-gold font-medium border-b border-book-warm/50">Home</a>
+            <a href="#collectie" onclick="toggleMobileMenu()" class="block py-2 text-book-dark hover:text-book-gold font-medium border-b border-book-warm/50">Collectie</a>
+            <a href="#categorieen" onclick="toggleMobileMenu()" class="block py-2 text-book-dark hover:text-book-gold font-medium border-b border-book-warm/50">Categorieën</a>
+            <a href="#over-ons" onclick="toggleMobileMenu()" class="block py-2 text-book-dark hover:text-book-gold font-medium border-b border-book-warm/50">Over Ons</a>
+            <a href="#contact" onclick="toggleMobileMenu()" class="block py-2 text-book-dark hover:text-book-gold font-medium">Contact & Service</a>
+        </div>
+    </header>
+
+    <main class="flex-grow" id="home">
+        <!-- Hero Section -->
+        <section class="relative bg-book-navy text-book-paper overflow-hidden py-16 lg:py-24">
+            <div class="absolute inset-0 opacity-10 hero-pattern"></div>
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                    
+                    <!-- Text Content -->
+                    <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                        <span class="inline-block px-3 py-1 rounded-full bg-book-gold/20 text-book-gold text-xs font-semibold uppercase tracking-wider border border-book-gold/30">
+                            Welkom bij de leukste online boetiek
+                        </span>
+                        <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
+                            Ontdek je volgende <span class="italic text-book-gold font-normal">favoriete</span> verhaal.
+                        </h1>
+                        <p class="text-gray-300 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 font-light leading-relaxed">
+                            Van meeslepende fictie tot inspirerende non-fictie en prachtige kinderboeken. Met zorg geselecteerd voor de echte liefhebber.
+                        </p>
+                        <div class="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                            <a href="#collectie" class="w-full sm:w-auto px-8 py-3.5 bg-book-gold hover:bg-book-goldhover text-book-navy font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all text-center flex items-center justify-center gap-2">
+                                Bekijk Collectie <i class="fa-solid fa-arrow-right text-xs"></i>
+                            </a>
+                            <a href="#categorieen" class="w-full sm:w-auto px-8 py-3.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg backdrop-blur-sm border border-white/20 transition-all text-center">
+                                Blader Categorieën
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Hero Visual / Featured Highlight -->
+                    <div class="lg:col-span-5 flex justify-center">
+                        <div class="relative w-full max-w-sm">
+                            <!-- Background decoration card -->
+                            <div class="absolute -inset-2 bg-gradient-to-r from-book-gold to-book-burgundy rounded-2xl blur-lg opacity-30 transform -rotate-3"></div>
+                            
+                            <!-- Main Hero Card -->
+                            <div class="relative bg-white p-6 rounded-2xl shadow-2xl text-book-dark border border-book-warm">
+                                <div class="absolute -top-3 -right-3 bg-book-burgundy text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow">
+                                    Boek van de Maand
+                                </div>
+                                <div class="flex gap-4 items-center mb-4">
+                                    <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400" alt="Het Schaduwspel" class="w-24 h-36 object-cover rounded-md shadow-md">
+                                    <div>
+                                        <span class="text-xs text-book-gold font-semibold uppercase tracking-wider">Fictie & Roman</span>
+                                        <h3 class="font-serif text-xl font-bold text-book-navy leading-snug">Het Schaduwspel</h3>
+                                        <p class="text-sm text-gray-600 mb-2">Elena Vance</p>
+                                        <div class="flex items-center text-amber-500 text-xs mb-2">
+                                            <i class="fa-solid fa-star"></i>
+                                            <i class="fa-solid fa-star"></i>
+                                            <i class="fa-solid fa-star"></i>
+                                            <i class="fa-solid fa-star"></i>
+                                            <i class="fa-solid fa-star-half-stroke"></i>
+                                            <span class="ml-1 text-gray-500 font-medium">(4.8)</span>
+                                        </div>
+                                        <p class="font-bold text-lg text-book-navy">€ 22,99</p>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-600 line-clamp-2 italic mb-4">
+                                    "Een betoverende roman over geheimen, kunst en de kracht van herinneringen in het historische Amsterdam."
+                                </p>
+                                <button onclick="addToCart(1)" class="w-full py-2.5 bg-book-navy hover:bg-opacity-90 text-white text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-cart-plus"></i> In Winkelmand
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Categories Section -->
+        <section id="categorieen" class="py-16 bg-book-warm/50 border-y border-book-warm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-12">
+                    <h2 class="font-serif text-3xl sm:text-4xl font-bold text-book-navy mb-3">Ontdek per Categorie</h2>
+                    <p class="text-gray-600 text-sm sm:text-base">Kies je favoriete genre en laat je inspireren door onze ruime collectie boeken.</p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                    <!-- Category 1 -->
+                    <button onclick="filterCategory('Fictie')" class="group p-6 bg-white rounded-xl shadow-sm hover:shadow-md border border-book-warm text-center transition-all hover:-translate-y-1">
+                        <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-book-paper text-book-navy group-hover:bg-book-gold group-hover:text-white flex items-center justify-center text-xl transition-colors">
+                            <i class="fa-solid fa-feather-pointed"></i>
+                        </div>
+                        <h3 class="font-serif font-bold text-lg text-book-navy mb-1">Fictie</h3>
+                        <p class="text-xs text-gray-500">Romans, Thrillers, Sci-Fi</p>
+                    </button>
+
+                    <!-- Category 2 -->
+                    <button onclick="filterCategory('Non-Fictie')" class="group p-6 bg-white rounded-xl shadow-sm hover:shadow-md border border-book-warm text-center transition-all hover:-translate-y-1">
+                        <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-book-paper text-book-navy group-hover:bg-book-gold group-hover:text-white flex items-center justify-center text-xl transition-colors">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <h3 class="font-serif font-bold text-lg text-book-navy mb-1">Non-Fictie</h3>
+                        <p class="text-xs text-gray-500">Biografieën, Historie, Psychologie</p>
+                    </button>
+
+                    <!-- Category 3 -->
+                    <button onclick="filterCategory('Kinderboeken')" class="group p-6 bg-white rounded-xl shadow-sm hover:shadow-md border border-book-warm text-center transition-all hover:-translate-y-1">
+                        <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-book-paper text-book-navy group-hover:bg-book-gold group-hover:text-white flex items-center justify-center text-xl transition-colors">
+                            <i class="fa-solid fa-child-reaching"></i>
+                        </div>
+                        <h3 class="font-serif font-bold text-lg text-book-navy mb-1">Kinderboeken</h3>
+                        <p class="text-xs text-gray-500">Prentenboeken, Jeugd, YA</p>
+                    </button>
+
+                    <!-- Category 4 -->
+                    <button onclick="filterCategory('Bestsellers')" class="group p-6 bg-white rounded-xl shadow-sm hover:shadow-md border border-book-warm text-center transition-all hover:-translate-y-1">
+                        <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-book-paper text-book-navy group-hover:bg-book-gold group-hover:text-white flex items-center justify-center text-xl transition-colors">
+                            <i class="fa-solid fa-fire text-amber-500 group-hover:text-white"></i>
+                        </div>
+                        <h3 class="font-serif font-bold text-lg text-book-navy mb-1">Bestsellers</h3>
+                        <p class="text-xs text-gray-500">Populairste titels van dit moment</p>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Books Catalog Section -->
+        <section id="collectie" class="py-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 border-b border-book-warm pb-6">
+                    <div>
+                        <span class="text-xs font-semibold text-book-gold uppercase tracking-widest">Onze Collectie</span>
+                        <h2 class="font-serif text-3xl sm:text-4xl font-bold text-book-navy">Uitgelichte Boeken</h2>
+                    </div>
+
+                    <!-- Category Filter Tabs -->
+                    <div class="flex flex-wrap gap-2 text-sm" id="categoryTabs">
+                        <button onclick="filterCategory('Alle')" class="filter-btn active px-4 py-2 rounded-full font-medium transition-all bg-book-navy text-white">Alle</button>
+                        <button onclick="filterCategory('Fictie')" class="filter-btn px-4 py-2 rounded-full font-medium transition-all bg-white text-book-dark hover:bg-book-warm border border-book-warm">Fictie</button>
+                        <button onclick="filterCategory('Non-Fictie')" class="filter-btn px-4 py-2 rounded-full font-medium transition-all bg-white text-book-dark hover:bg-book-warm border border-book-warm">Non-Fictie</button>
+                        <button onclick="filterCategory('Kinderboeken')" class="filter-btn px-4 py-2 rounded-full font-medium transition-all bg-white text-book-dark hover:bg-book-warm border border-book-warm">Kinderboeken</button>
+                        <button onclick="filterCategory('Bestsellers')" class="filter-btn px-4 py-2 rounded-full font-medium transition-all bg-white text-book-dark hover:bg-book-warm border border-book-warm">Bestsellers</button>
+                    </div>
+                </div>
+
+                <!-- Active Filter Indicator & Reset -->
+                <div id="filterInfo" class="hidden mb-6 flex items-center justify-between bg-book-warm/60 p-3 rounded-lg text-sm">
+                    <span class="text-book-navy">Resultaten voor: <strong id="filterText" class="font-semibold"></strong></span>
+                    <button onclick="filterCategory('Alle')" class="text-xs text-book-burgundy hover:underline font-semibold flex items-center gap-1">
+                        <i class="fa-solid fa-xmark"></i> Filter wissen
+                    </button>
+                </div>
+
+                <!-- Books Grid -->
+                <div id="booksGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                    <!-- Dynamic rendering via JS -->
+                </div>
+
+                <!-- Empty state for search/filter -->
+                <div id="noResults" class="hidden text-center py-16">
+                    <i class="fa-solid fa-book-open-reader text-5xl text-gray-300 mb-4"></i>
+                    <h3 class="font-serif text-xl font-bold text-book-navy mb-1">Geen boeken gevonden</h3>
+                    <p class="text-gray-500 text-sm mb-4">Probeer een andere zoekterm of categorie filter.</p>
+                    <button onclick="resetFilters()" class="px-5 py-2 bg-book-navy text-white text-sm rounded-lg hover:bg-opacity-90 transition-colors">
+                        Toon alle boeken
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- About Us Section -->
+        <section id="over-ons" class="py-16 bg-book-navy text-book-paper relative overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&q=80&w=800" alt="Sfeervolle boekwinkel" class="rounded-2xl shadow-2xl object-cover h-96 w-full">
+                        <div class="absolute -bottom-6 -right-6 bg-book-gold text-book-navy p-6 rounded-xl hidden sm:block shadow-xl">
+                            <p class="font-serif text-3xl font-bold">25+</p>
+                            <p class="text-xs font-semibold uppercase tracking-wider">Jaar passie voor boeken</p>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <span class="text-xs font-semibold text-book-gold uppercase tracking-widest">Sinds 1998</span>
+                        <h2 class="font-serif text-3xl sm:text-4xl font-bold">Liefde voor het papieren boek</h2>
+                        <p class="text-gray-300 leading-relaxed text-sm sm:text-base">
+                            "De Boekenkast" begon als een kleine fysieke boetiek in het hart van de stad en is uitgegroeid tot een warme online plek voor lezers uit heel Nederland en België. Wij geloven dat een goed boek meer is dan papier: het is een rustpunt, een avontuur en een inspiratiebron.
+                        </p>
+                        <div class="grid grid-cols-2 gap-4 pt-2">
+                            <div class="border-l-2 border-book-gold pl-4">
+                                <h4 class="font-bold text-white text-lg">Zorgvuldig Geselecteerd</h4>
+                                <p class="text-xs text-gray-400">Elke titel op ons schap is door ons team gelezen en goedgekeurd.</p>
+                            </div>
+                            <div class="border-l-2 border-book-gold pl-4">
+                                <h4 class="font-bold text-white text-lg">Duurzaam Verpakt</h4>
+                                <p class="text-xs text-gray-400">Wij verzenden alle orders in 100% recyclebare verpakkingen.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Newsletter Signup Section -->
+        <section class="py-16 bg-book-warm">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <div class="w-12 h-12 bg-book-navy text-book-gold rounded-full flex items-center justify-center mx-auto mb-4 text-xl shadow">
+                    <i class="fa-regular fa-paper-plane"></i>
+                </div>
+                <h2 class="font-serif text-3xl font-bold text-book-navy mb-2">Blijf op de hoogte van leesnieuws</h2>
+                <p class="text-gray-600 text-sm max-w-lg mx-auto mb-6">
+                    Schrijf je in voor onze nieuwsbrief en ontvang maandelijks boekentips, exclusieve lezerskortingen en uitnodigingen voor lezingen.
+                </p>
+                <form onsubmit="handleNewsletter(event)" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                    <input type="email" required placeholder="Je e-mailadres..." 
+                        class="px-4 py-3 rounded-lg border border-gray-300 flex-grow focus:outline-none focus:ring-2 focus:ring-book-gold text-sm shadow-sm">
+                    <button type="submit" class="px-6 py-3 bg-book-navy hover:bg-opacity-90 text-white font-semibold rounded-lg shadow transition-colors text-sm whitespace-nowrap">
+                        Inschrijven
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-book-navy text-book-paper border-t border-book-gold/20 pt-12 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                
+                <!-- Col 1: Store info -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded bg-book-gold text-book-navy flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-book"></i>
+                        </div>
+                        <span class="font-serif text-xl font-bold tracking-tight text-white">De Boekenkast</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-4 leading-relaxed">
+                        Jouw vertrouwde online boekwinkel voor inspiratie, verdieping en ontspanning.
+                    </p>
+                    <div class="flex space-x-3 text-gray-300">
+                        <a href="#" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-book-gold hover:text-book-navy transition-colors text-xs"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-book-gold hover:text-book-navy transition-colors text-xs"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="#" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-book-gold hover:text-book-navy transition-colors text-xs"><i class="fa-brands fa-pinterest-p"></i></a>
+                    </div>
+                </div>
+
+                <!-- Col 2: Quick Links -->
+                <div>
+                    <h3 class="font-serif text-lg font-bold text-white mb-4">Snelle Links</h3>
+                    <ul class="space-y-2 text-xs text-gray-300">
+                        <li><a href="#collectie" class="hover:text-book-gold transition-colors">Bestsellers Top 10</a></li>
+                        <li><a href="#collectie" class="hover:text-book-gold transition-colors">Nieuwe Releases</a></li>
+                        <li><a href="#collectie" class="hover:text-book-gold transition-colors">Cadeaubonnen</a></li>
+                        <li><a href="#over-ons" class="hover:text-book-gold transition-colors">Onze Historie</a></li>
+                        <li><a href="#" class="hover:text-book-gold transition-colors">Veelgestelde Vragen (FAQ)</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 3: Customer Service & Hours -->
+                <div>
+                    <h3 class="font-serif text-lg font-bold text-white mb-4">Klantenservice</h3>
+                    <ul class="space-y-2 text-xs text-gray-300">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-clock text-book-gold"></i> Ma - Za: 09:00 - 18:00</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-phone text-book-gold"></i> +31 (0)20 123 4567</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-envelope text-book-gold"></i> klantenservice@deboekenkast.nl</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-location-dot text-book-gold"></i> Keizersgracht 101, Amsterdam</li>
+                    </ul>
+                </div>
+
+                <!-- Col 4: Guarantees & Payment -->
+                <div>
+                    <h3 class="font-serif text-lg font-bold text-white mb-4">Veilig Betalen</h3>
+                    <p class="text-xs text-gray-400 mb-3">Wij ondersteunen de volgende betaalmethoden:</p>
+                    <div class="flex flex-wrap gap-2 text-2xl text-gray-300">
+                        <i class="fa-brands fa-cc-visa" title="Visa"></i>
+                        <i class="fa-brands fa-cc-mastercard" title="Mastercard"></i>
+                        <i class="fa-brands fa-cc-paypal" title="PayPal"></i>
+                        <i class="fa-solid fa-building-columns" title="iDEAL / Bank"></i>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-400">
+                <p>&copy; 2026 De Boekenkast. Alle rechten voorbehouden.</p>
+                <div class="flex space-x-4 mt-3 sm:mt-0">
+                    <a href="#" class="hover:underline">Privacybeleid</a>
+                    <a href="#" class="hover:underline">Algemene Voorwaarden</a>
+                    <a href="#" class="hover:underline">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Shopping Cart Slide-over Panel -->
+    <div id="cartOverlay" onclick="toggleCart()" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+    <aside id="cartPanel" class="fixed top-0 right-0 h-full w-full sm:w-96 bg-book-paper shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <!-- Cart Header -->
+        <div class="p-5 bg-book-navy text-white flex items-center justify-between border-b border-book-gold/20">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-bag-shopping text-book-gold text-lg"></i>
+                <h3 class="font-serif text-xl font-bold">Winkelmandje</h3>
+            </div>
+            <button onclick="toggleCart()" class="text-gray-300 hover:text-white p-1 focus:outline-none">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Cart Items List Container -->
+        <div id="cartItems" class="flex-grow overflow-y-auto p-5 space-y-4">
+            <!-- Dynamic Cart Items injected via JS -->
+        </div>
+
+        <!-- Cart Footer / Checkout -->
+        <div class="p-5 bg-white border-t border-book-warm space-y-4">
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between text-gray-600">
+                    <span>Subtotaal</span>
+                    <span id="cartSubtotal" class="font-semibold">€ 0,00</span>
+                </div>
+                <div class="flex justify-between text-gray-600">
+                    <span>Verzendkosten</span>
+                    <span id="cartShipping" class="font-semibold text-emerald-600">Gratis</span>
+                </div>
+                <div class="border-t border-book-warm pt-2 flex justify-between text-base font-bold text-book-navy">
+                    <span>Totaal</span>
+                    <span id="cartTotal" class="text-lg">€ 0,00</span>
+                </div>
+            </div>
+
+            <button onclick="handleCheckout()" class="w-full py-3 bg-book-gold hover:bg-book-goldhover text-book-navy font-bold rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
+                <span>Veilig Afrekenen</span>
+                <i class="fa-solid fa-lock text-xs"></i>
+            </button>
+            
+            <p class="text-[11px] text-center text-gray-400">
+                <i class="fa-solid fa-shield-halved text-emerald-600 mr-1"></i> 30 dagen bedenktijd & gratis retourneren
+            </p>
+        </div>
+    </aside>
+
+    <!-- Toast Notification for Add to Cart -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 hidden bg-book-navy text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-3 border-l-4 border-book-gold text-sm toast-animate">
+        <i class="fa-solid fa-circle-check text-book-gold text-lg"></i>
+        <div>
+            <p class="font-semibold" id="toastTitle">Toegevoegd aan winkelmand!</p>
+            <p class="text-xs text-gray-300" id="toastMessage">Het boek is toegevoegd.</p>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Sample Books Data Store
+        const books = [
+            {
+                id: 1,
+                title: "Het Schaduwspel",
+                author: "Elena Vance",
+                category: "Fictie",
+                isBestseller: true,
+                price: 22.99,
+                rating: 4.8,
+                reviews: 124,
+                cover: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400"
+            },
+            {
+                id: 2,
+                title: "De Stille Evolutie",
+                author: "Prof. Dr. M. de Jong",
+                category: "Non-Fictie",
+                isBestseller: false,
+                price: 24.50,
+                rating: 4.6,
+                reviews: 89,
+                cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=400"
+            },
+            {
+                id: 3,
+                title: "Het Betoverde Bos",
+                author: "Sanne Blom",
+                category: "Kinderboeken",
+                isBestseller: true,
+                price: 15.99,
+                rating: 4.9,
+                reviews: 210,
+                cover: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=400"
+            },
+            {
+                id: 4,
+                title: "De Tijdreiziger van Amsterdam",
+                author: "Lucas Hart",
+                category: "Fictie",
+                isBestseller: true,
+                price: 21.00,
+                rating: 4.7,
+                reviews: 95,
+                cover: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"
+            },
+            {
+                id: 5,
+                title: "Rust in je Hoofd",
+                author: "Claire Janssen",
+                category: "Non-Fictie",
+                isBestseller: true,
+                price: 19.95,
+                rating: 4.5,
+                reviews: 310,
+                cover: "https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=400"
+            },
+            {
+                id: 6,
+                title: "Kleine Avonturiers",
+                author: "Tim & Lisa Peters",
+                category: "Kinderboeken",
+                isBestseller: false,
+                price: 13.50,
+                rating: 4.8,
+                reviews: 64,
+                cover: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&q=80&w=400"
+            },
+            {
+                id: 7,
+                title: "Symphonie van de Nacht",
+                author: "Arthur Pendelton",
+                category: "Fictie",
+                isBestseller: false,
+                price: 23.99,
+                rating: 4.3,
+                reviews: 42,
+                cover: "https://images.unsplash.com/photo-1476275466078-4007374efbbe?auto=format&fit=crop&q=80&w=400"
+            },
+            {
+                id: 8,
+                title: "De Moderne Filosoof",
+                author: "Sarah Lindeman",
+                category: "Non-Fictie",
+                isBestseller: false,
+                price: 27.50,
+                rating: 4.6,
+                reviews: 58,
+                cover: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=400"
+            }
+        ];
+
+        // Shopping Cart State
+        let cart = [];
+        let currentCategory = 'Alle';
+        let searchQuery = '';
+
+        // Initialize application on page load
+        window.onload = function() {
+            renderBooks();
+            updateCartUI();
+        };
+
+        // Render books into the grid
+        function renderBooks() {
+            const grid = document.getElementById('booksGrid');
+            const noResults = document.getElementById('noResults');
+            
+            // Filter books based on active category and search input
+            const filteredBooks = books.filter(book => {
+                const matchesCategory = 
+                    currentCategory === 'Alle' ? true :
+                    currentCategory === 'Bestsellers' ? book.isBestseller :
+                    book.category === currentCategory;
+
+                const matchesSearch = 
+                    book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    book.category.toLowerCase().includes(searchQuery.toLowerCase());
+
+                return matchesCategory && matchesSearch;
+            });
+
+            // Toggle empty state if no books found
+            if (filteredBooks.length === 0) {
+                grid.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            // Render book cards HTML
+            grid.innerHTML = filteredBooks.map(book => `
+                <div class="book-card bg-white rounded-xl overflow-hidden border border-book-warm flex flex-col justify-between h-full">
+                    <div>
+                        <!-- Image container with ratio -->
+                        <div class="relative bg-book-warm/40 p-6 flex items-center justify-center overflow-hidden">
+                            ${book.isBestseller ? `<span class="absolute top-3 left-3 bg-book-gold text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md shadow-sm">Bestseller</span>` : ''}
+                            <img src="${book.cover}" alt="${book.title}" class="h-52 object-cover rounded shadow-md transition-transform duration-300 hover:scale-105" onerror="this.src='https://placehold.co/300x450/1A2A3A/FFFFFF?text=Geen+Omslag'">
+                        </div>
+
+                        <!-- Content -->
+                        <div class="p-5">
+                            <span class="text-[11px] font-semibold text-book-gold uppercase tracking-wider">${book.category}</span>
+                            <h3 class="font-serif font-bold text-lg text-book-navy mt-1 leading-snug line-clamp-1" title="${book.title}">${book.title}</h3>
+                            <p class="text-xs text-gray-500 mb-2">${book.author}</p>
+                            
+                            <!-- Rating -->
+                            <div class="flex items-center text-amber-500 text-xs mb-3">
+                                ${getStarRatingHTML(book.rating)}
+                                <span class="text-gray-400 text-[11px] ml-1">(${book.reviews})</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer / Price & Add Button -->
+                    <div class="p-5 pt-0 flex items-center justify-between mt-auto">
+                        <div>
+                            <span class="text-xs text-gray-400 block">Prijs</span>
+                            <span class="font-bold text-lg text-book-navy">€ ${book.price.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <button onclick="addToCart(${book.id})" class="p-3 bg-book-navy hover:bg-book-gold text-white hover:text-book-navy rounded-lg transition-colors shadow-sm focus:outline-none" title="In winkelmandje">
+                            <i class="fa-solid fa-cart-plus text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Generate Star Rating HTML
+        function getStarRatingHTML(rating) {
+            let stars = '';
+            const fullStars = Math.floor(rating);
+            const hasHalfStar = rating % 1 !== 0;
+
+            for (let i = 0; i < fullStars; i++) {
+                stars += `<i class="fa-solid fa-star"></i>`;
+            }
+            if (hasHalfStar) {
+                stars += `<i class="fa-solid fa-star-half-stroke"></i>`;
+            }
+            return stars;
+        }
+
+        // Filter by Category
+        function filterCategory(category) {
+            currentCategory = category;
+            
+            // Update Tab UI
+            const buttons = document.querySelectorAll('#categoryTabs button');
+            buttons.forEach(btn => {
+                if (btn.textContent.trim() === category || (category === 'Alle' && btn.textContent.trim() === 'Alle')) {
+                    btn.className = "filter-btn active px-4 py-2 rounded-full font-medium transition-all bg-book-navy text-white shadow-sm";
+                } else {
+                    btn.className = "filter-btn px-4 py-2 rounded-full font-medium transition-all bg-white text-book-dark hover:bg-book-warm border border-book-warm";
+                }
+            });
+
+            // Update Filter Info Banner
+            const filterInfo = document.getElementById('filterInfo');
+            const filterText = document.getElementById('filterText');
+            if (category !== 'Alle' || searchQuery !== '') {
+                filterInfo.classList.remove('hidden');
+                filterText.textContent = `${category !== 'Alle' ? category : ''} ${searchQuery ? `"${searchQuery}"` : ''}`;
+            } else {
+                filterInfo.classList.add('hidden');
+            }
+
+            renderBooks();
+        }
+
+        // Handle Search Inputs
+        function handleSearch() {
+            const input = document.getElementById('searchInput');
+            searchQuery = input.value.trim();
+            
+            const clearBtn = document.getElementById('clearSearch');
+            if (searchQuery.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+
+            filterCategory(currentCategory);
+        }
+
+        function handleMobileSearch() {
+            const input = document.getElementById('searchInputMobile');
+            searchQuery = input.value.trim();
+            filterCategory(currentCategory);
+        }
+
+        function clearSearchInput() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearch').classList.add('hidden');
+            searchQuery = '';
+            filterCategory(currentCategory);
+        }
+
+        function resetFilters() {
+            clearSearchInput();
+            filterCategory('Alle');
+        }
+
+        // Add to Cart Functionality
+        function addToCart(bookId) {
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+
+            const existingItem = cart.find(item => item.id === bookId);
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ ...book, quantity: 1 });
+            }
+
+            updateCartUI();
+            showToast("Toegevoegd!", `"${book.title}" bevindt zich in je winkelmandje.`);
+        }
+
+        // Update Quantity in Cart
+        function updateQuantity(bookId, delta) {
+            const item = cart.find(item => item.id === bookId);
+            if (!item) return;
+
+            item.quantity += delta;
+            if (item.quantity <= 0) {
+                cart = cart.filter(i => i.id !== bookId);
+            }
+
+            updateCartUI();
+        }
+
+        // Remove item completely
+        function removeFromCart(bookId) {
+            cart = cart.filter(i => i.id !== bookId);
+            updateCartUI();
+        }
+
+        // Render Cart UI
+        function updateCartUI() {
+            const cartBadge = document.getElementById('cartBadge');
+            const cartItems = document.getElementById('cartItems');
+            const cartSubtotal = document.getElementById('cartSubtotal');
+            const cartTotal = document.getElementById('cartTotal');
+
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            // Badge count animation
+            cartBadge.textContent = totalItems;
+            if (totalItems > 0) {
+                cartBadge.classList.remove('scale-0');
+                cartBadge.classList.add('scale-100');
+            } else {
+                cartBadge.classList.remove('scale-100');
+                cartBadge.classList.add('scale-0');
+            }
+
+            // Render Cart Items
+            if (cart.length === 0) {
+                cartItems.innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fa-solid fa-basket-shopping text-4xl mb-3 text-gray-300"></i>
+                        <p class="font-medium text-book-navy">Je winkelmandje is nog leeg</p>
+                        <p class="text-xs mt-1">Voeg mooie boeken toe aan je verzameling!</p>
+                    </div>
+                `;
+            } else {
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="flex gap-3 bg-white p-3 rounded-lg border border-book-warm shadow-sm items-center">
+                        <img src="${item.cover}" alt="${item.title}" class="w-12 h-16 object-cover rounded shadow-xs" onerror="this.src='https://placehold.co/100x150?text=Boek'">
+                        <div class="flex-grow min-w-0">
+                            <h4 class="font-serif font-bold text-sm text-book-navy truncate">${item.title}</h4>
+                            <p class="text-xs text-gray-500">€ ${item.price.toFixed(2).replace('.', ',')}</p>
+                            
+                            <!-- Quantity Controls -->
+                            <div class="flex items-center gap-2 mt-2">
+                                <button onclick="updateQuantity(${item.id}, -1)" class="w-6 h-6 bg-book-warm hover:bg-gray-300 rounded text-xs flex items-center justify-center text-book-navy transition-colors">
+                                    <i class="fa-solid fa-minus"></i>
+                                </button>
+                                <span class="text-xs font-semibold px-1">${item.quantity}</span>
+                                <button onclick="updateQuantity(${item.id}, 1)" class="w-6 h-6 bg-book-warm hover:bg-gray-300 rounded text-xs flex items-center justify-center text-book-navy transition-colors">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-right flex flex-col justify-between h-16">
+                            <button onclick="removeFromCart(${item.id})" class="text-gray-400 hover:text-book-burgundy text-xs self-end">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                            <span class="font-bold text-sm text-book-navy">€ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Totals
+            cartSubtotal.textContent = `€ ${subtotal.toFixed(2).replace('.', ',')}`;
+            cartTotal.textContent = `€ ${subtotal.toFixed(2).replace('.', ',')}`;
+        }
+
+        // Toggle Cart Slide-over Panel
+        function toggleCart() {
+            const panel = document.getElementById('cartPanel');
+            const overlay = document.getElementById('cartOverlay');
+
+            if (panel.classList.contains('translate-x-full')) {
+                // Open panel
+                panel.classList.remove('translate-x-full');
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                document.body.style.overflow = 'hidden';
+            } else {
+                // Close panel
+                panel.classList.add('translate-x-full');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Toggle Mobile Menu
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const icon = document.getElementById('menuIcon');
+            
+            menu.classList.toggle('hidden');
+            if (menu.classList.contains('hidden')) {
+                icon.className = 'fa-solid fa-bars text-xl';
+            } else {
+                icon.className = 'fa-solid fa-xmark text-xl';
+            }
+        }
+
+        // Toast Notification System
+        function showToast(title, message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMessage').textContent = message;
+
+            toast.classList.remove('hidden');
+
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Checkout Action (Fictional)
+        function handleCheckout() {
+            if (cart.length === 0) {
+                showToast("Winkelmand is leeg", "Voeg eerst een boek toe alvorens af te rekenen.");
+                return;
+            }
+
+            alert("Bedankt voor je virtuele bestelling bij De Boekenkast! Dit is een demonstratie webshop.");
+            cart = [];
+            updateCartUI();
+            toggleCart();
+        }
+
+        // Newsletter Handler
+        function handleNewsletter(e) {
+            e.preventDefault();
+            showToast("Inschrijving gelukt!", "Bedankt voor je inschrijving op onze nieuwsbrief.");
+            e.target.reset();
+        }
+    </script>
+</body>
+</html>
