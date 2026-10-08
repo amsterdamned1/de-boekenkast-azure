@@ -96,6 +96,17 @@
 </head>
 <body class="flex flex-col min-h-screen relative overflow-x-hidden">
 
+    <!-- Demo Notice Warning Bar -->
+    <div id="demoNoticeBar" class="bg-amber-400 text-amber-950 font-medium text-xs sm:text-sm py-2 px-4 text-center border-b border-amber-500/30 flex items-center justify-between z-50">
+        <div class="flex-1 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-900 text-sm"></i>
+            <span><strong>Let op:</strong> Dit is een demonstratiewebsite / oefenproject. Er worden geen echte bestellingen verwerkt of boeken geleverd.</span>
+        </div>
+        <button onclick="document.getElementById('demoNoticeBar').remove()" class="text-amber-900 hover:text-amber-950 p-1 ml-2 focus:outline-none" title="Melding sluiten">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+    </div>
+
     <!-- Top Announcement Bar -->
     <div class="bg-book-navy text-book-paper text-xs py-2 px-4 text-center tracking-wide font-medium flex justify-between items-center px-6 border-b border-book-gold/20">
         <span class="hidden md:inline"><i class="fa-solid fa-truck-fast text-book-gold mr-2"></i>Gratis verzending vanaf €30,- in Nederland & België</span>
